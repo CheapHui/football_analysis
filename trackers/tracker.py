@@ -14,7 +14,7 @@ class Tracker:
         self.model = YOLO(model_path) 
         self.tracker = sv.ByteTrack()
 
-    def add_position_to_tracks(sekf,tracks):
+    def add_position_to_tracks(self,tracks):
         for object, object_tracks in tracks.items():
             for frame_num, track in enumerate(object_tracks):
                 for track_id, track_info in track.items():
@@ -150,7 +150,7 @@ class Tracker:
 
         return frame
 
-    def draw_traingle(self,frame,bbox,color):
+    def draw_triangle(self,frame,bbox,color):
         y= int(bbox[1])
         x,_ = get_center_of_bbox(bbox)
 
@@ -198,15 +198,15 @@ class Tracker:
                 frame = self.draw_ellipse(frame, player["bbox"],color, track_id)
 
                 if player.get('has_ball',False):
-                    frame = self.draw_traingle(frame, player["bbox"],(0,0,255))
+                    frame = self.draw_triangle(frame, player["bbox"],(0,0,255))
 
             # Draw Referee
             for _, referee in referee_dict.items():
                 frame = self.draw_ellipse(frame, referee["bbox"],(0,255,255))
             
-            # Draw ball 
+            # Draw ball
             for track_id, ball in ball_dict.items():
-                frame = self.draw_traingle(frame, ball["bbox"],(0,255,0))
+                frame = self.draw_triangle(frame, ball["bbox"],(0,255,0))
 
 
             # Draw Team Ball Control
