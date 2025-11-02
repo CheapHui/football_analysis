@@ -1,0 +1,309 @@
+# Football Analysis System - Configuration File
+# Version: 1.0
+# Last Updated: 2025-11-02
+
+# ==============================================================================
+# VIDEO SETTINGS
+# ==============================================================================
+video:
+  # Input/Output paths
+  input_path: "input_videos/08fd33_4.mp4"
+  output_path: "output_videos/output_video.avi"
+
+  # Video properties
+  fps: 24
+  codec: "XVID"  # FourCC codec for output video
+
+  # Processing options
+  read_all_frames: true  # If false, use streaming/chunking
+  chunk_size: 100  # Frames per chunk (for streaming mode)
+
+# ==============================================================================
+# MODEL SETTINGS
+# ==============================================================================
+model:
+  # Model file path
+  path: "models/best.pt"
+
+  # Detection parameters
+  confidence_threshold: 0.1
+  batch_size: 20
+
+  # Per-class confidence thresholds (optional, overrides global threshold)
+  class_confidence:
+    ball: 0.1
+    player: 0.1
+    goalkeeper: 0.1
+    referee: 0.1
+
+  # Performance options
+  use_fp16: false  # Enable FP16 inference (requires GPU)
+  device: "cuda"  # Options: "cuda", "cpu", "mps"
+
+# ==============================================================================
+# TRACKING SETTINGS
+# ==============================================================================
+tracking:
+  # Tracker type
+  tracker_type: "bytetrack"  # Options: "bytetrack", "botsort"
+
+  # Tracking parameters
+  min_hits: 3
+  max_age: 30
+
+  # Ball interpolation
+  interpolate_ball: true
+  interpolation_method: "linear"  # Options: "linear", "polynomial"
+
+# ==============================================================================
+# TEAM ASSIGNMENT SETTINGS
+# ==============================================================================
+team_assignment:
+  # Method for team assignment
+  method: "kmeans"  # Options: "kmeans", "hsv", "deep_learning"
+
+  # K-Means parameters
+  num_clusters: 2
+  kmeans_init: "k-means++"
+  kmeans_iterations: 10
+
+  # Color extraction
+  use_top_half: true  # Only use top half of player bbox for jersey color
+  color_space: "rgb"  # Options: "rgb", "hsv", "lab"
+
+  # Caching
+  cache_assignments: true  # Cache team assignments per player
+  use_consensus_voting: false  # Use multi-frame voting (slower but more accurate)
+  consensus_window: 30  # Frames for consensus voting
+
+# ==============================================================================
+# BALL POSSESSION SETTINGS
+# ==============================================================================
+ball_possession:
+  # Distance threshold for ball assignment (pixels)
+  max_distance: 70
+
+  # Which foot position to use
+  use_foot_position: true  # If false, uses bbox center
+  check_both_feet: true  # Check distance to both left and right foot
+
+# ==============================================================================
+# CAMERA MOVEMENT SETTINGS
+# ==============================================================================
+camera_movement:
+  # Optical flow parameters
+  minimum_distance: 5  # Minimum movement to register as camera motion
+
+  # Lucas-Kanade parameters
+  window_size: [15, 15]
+  max_pyramid_level: 2
+  criteria_eps: 0.03
+  criteria_max_count: 10
+
+  # Feature detection
+  max_corners: 100
+  quality_level: 0.3
+  min_distance: 3
+  block_size: 7
+
+  # Feature mask areas (x_start, x_end for vertical strips)
+  mask_areas:
+    - [0, 20]
+    - [900, 1050]
+
+# ==============================================================================
+# PERSPECTIVE TRANSFORMATION SETTINGS
+# ==============================================================================
+perspective:
+  # Court dimensions (in meters)
+  court_width: 68
+  court_length: 23.32
+
+  # Pixel vertices (corners in video frame)
+  # Format: [[x1, y1], [x2, y2], [x3, y3], [x4, y4]]
+  # Order: bottom-left, top-left, top-right, bottom-right
+  pixel_vertices:
+    - [110, 1035]
+    - [265, 275]
+    - [910, 260]
+    - [1640, 915]
+
+  # Target vertices (real-world coordinates in meters)
+  # Automatically calculated based on court dimensions
+  auto_calculate_target: true
+
+# ==============================================================================
+# SPEED AND DISTANCE SETTINGS
+# ==============================================================================
+speed_distance:
+  # Calculation parameters
+  frame_window: 5  # Number of frames for speed calculation
+  frame_rate: 24  # FPS (should match video.fps)
+
+  # Units
+  speed_unit: "km/h"  # Options: "km/h", "m/s", "mph"
+  distance_unit: "m"  # Options: "m", "km", "yards"
+
+  # What to track
+  track_players: true
+  track_ball: false
+  track_referees: false
+
+# ==============================================================================
+# VISUALIZATION SETTINGS
+# ==============================================================================
+visualization:
+  # What to display
+  show_players: true
+  show_referees: true
+  show_ball: true
+  show_player_ids: true
+  show_speed: true
+  show_distance: true
+  show_ball_control: true
+  show_camera_movement: true
+  show_trails: false  # Player movement trails (future feature)
+
+  # Colors (BGR format)
+  colors:
+    referee: [0, 255, 255]  # Yellow
+    ball: [0, 255, 0]  # Green
+    ball_possession: [0, 0, 255]  # Red
+    default_player: [0, 0, 255]  # Red (when team not assigned)
+
+  # Ball control panel position
+  ball_control_position:
+    x: 1350
+    y: 850
+    width: 550
+    height: 120
+
+  # Camera movement panel position
+  camera_movement_position:
+    x: 0
+    y: 0
+    width: 500
+    height: 100
+
+  # Overlay transparency
+  overlay_alpha: 0.4
+
+  # Text settings
+  font: "FONT_HERSHEY_SIMPLEX"
+  font_scale: 1.0
+  font_thickness: 3
+  font_color: [0, 0, 0]  # Black
+
+  # Player annotation settings
+  ellipse:
+    width_ratio: 1.0
+    height_ratio: 0.35
+    start_angle: -45
+    end_angle: 235
+    thickness: 2
+
+  # ID badge settings
+  id_badge:
+    width: 40
+    height: 20
+    offset_y: 15
+    font_scale: 0.6
+    font_thickness: 2
+
+# ==============================================================================
+# CACHING SETTINGS
+# ==============================================================================
+caching:
+  # Enable/disable caching
+  enabled: true
+
+  # Cache directory
+  cache_dir: "stubs"
+
+  # Specific cache files
+  tracks_stub: "stubs/track_stubs.pkl"
+  camera_movement_stub: "stubs/camera_movement_stub.pkl"
+
+  # Cache behavior
+  read_from_stub: true  # Load from cache if available
+  write_to_stub: true  # Save to cache after processing
+
+# ==============================================================================
+# PERFORMANCE SETTINGS
+# ==============================================================================
+performance:
+  # GPU settings
+  use_gpu: true
+  gpu_id: 0
+
+  # Multi-processing
+  num_workers: 4
+  enable_multiprocessing: false  # For parallel frame processing
+
+  # Memory management
+  max_memory_gb: 8
+  enable_garbage_collection: true
+  gc_frequency: 100  # Run GC every N frames
+
+# ==============================================================================
+# LOGGING SETTINGS
+# ==============================================================================
+logging:
+  # Log level
+  level: "INFO"  # Options: "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"
+
+  # Log output
+  log_to_console: true
+  log_to_file: true
+  log_file: "logs/football_analysis.log"
+
+  # Log format
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  date_format: "%Y-%m-%d %H:%M:%S"
+
+  # Log rotation
+  max_file_size_mb: 10
+  backup_count: 5
+
+# ==============================================================================
+# ADVANCED FEATURES (Future)
+# ==============================================================================
+advanced:
+  # Heatmap generation
+  generate_heatmaps: false
+  heatmap_resolution: [100, 100]
+
+  # Event detection
+  detect_passes: false
+  detect_shots: false
+  detect_sprints: false
+
+  # Tactical analysis
+  detect_formation: false
+  analyze_pressing: false
+
+  # Export options
+  export_json: false
+  export_csv: false
+  json_output_path: "output/analysis.json"
+  csv_output_path: "output/stats.csv"
+
+# ==============================================================================
+# DEBUG SETTINGS
+# ==============================================================================
+debug:
+  # Debug mode
+  enabled: false
+
+  # Visualization debug
+  show_bboxes: false
+  show_feature_points: false
+  show_optical_flow: false
+
+  # Save intermediate results
+  save_debug_frames: false
+  debug_frames_dir: "debug_output"
+
+  # Performance profiling
+  profile_performance: false
+  print_timing_stats: false

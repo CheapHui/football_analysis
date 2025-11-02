@@ -1,12 +1,19 @@
-import sys 
+import sys
 sys.path.append('../')
 from utils import get_center_of_bbox, measure_distance
 
 class PlayerBallAssigner():
-    def __init__(self):
-        self.max_player_ball_distance = 70
-    
-    def assign_ball_to_player(self,players,ball_bbox):
+    def __init__(self, config):
+        """
+        Initialize player ball assigner with configuration.
+
+        Args:
+            config: Configuration object from config_loader
+        """
+        self.config = config
+        self.max_player_ball_distance = config.ball_possession.max_distance
+
+    def assign_ball_to_player(self, players, ball_bbox):
         ball_position = get_center_of_bbox(ball_bbox)
 
         miniumum_distance = 99999

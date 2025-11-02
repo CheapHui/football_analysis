@@ -1,18 +1,24 @@
-import numpy as np 
+import numpy as np
 import cv2
 
 class ViewTransformer():
-    def __init__(self):
-        court_width = 68
-        court_length = 23.32
+    def __init__(self, config):
+        """
+        Initialize view transformer with configuration.
 
-        self.pixel_vertices = np.array([[110, 1035], 
-                               [265, 275], 
-                               [910, 260], 
-                               [1640, 915]])
-        
+        Args:
+            config: Configuration object from config_loader
+        """
+        self.config = config
+        court_width = config.perspective.court_width
+        court_length = config.perspective.court_length
+
+        # Load pixel vertices from config
+        self.pixel_vertices = np.array(config.perspective.pixel_vertices)
+
+        # Calculate target vertices from court dimensions
         self.target_vertices = np.array([
-            [0,court_width],
+            [0, court_width],
             [0, 0],
             [court_length, 0],
             [court_length, court_width]
@@ -21,7 +27,10 @@ class ViewTransformer():
         self.pixel_vertices = self.pixel_vertices.astype(np.float32)
         self.target_vertices = self.target_vertices.astype(np.float32)
 
-        self.perspective_transformer = cv2.getPerspectiveTransform(self.pixel_vertices, self.target_vertices)
+        self.perspective_transformer = cv2.getPerspectiveTransform(
+            self.pixel_vertices,
+            self.target_vertices
+        )
 
     def transform_point(self,point):
         p = (int(point[0]),int(point[1]))

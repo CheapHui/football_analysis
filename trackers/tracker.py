@@ -5,13 +5,20 @@ import os
 import numpy as np
 import pandas as pd
 import cv2
-import sys 
+import sys
 sys.path.append('../')
 from utils import get_center_of_bbox, get_bbox_width, get_foot_position
 
 class Tracker:
-    def __init__(self, model_path):
-        self.model = YOLO(model_path) 
+    def __init__(self, config):
+        """
+        Initialize tracker with configuration.
+
+        Args:
+            config: Configuration object from config_loader
+        """
+        self.config = config
+        self.model = YOLO(config.model.path)
         self.tracker = sv.ByteTrack()
 
     def add_position_to_tracks(self,tracks):
@@ -38,10 +45,22 @@ class Tracker:
         return ball_positions
 
     def detect_frames(self, frames):
-        batch_size=20 
-        detections = [] 
-        for i in range(0,len(frames),batch_size):
-            detections_batch = self.model.predict(frames[i:i+batch_size],conf=0.1)
+        """
+        Detect objects in frames using YOLO model.
+
+        Args:
+            frames: List of video frames
+
+        Returns:
+            List of detection results
+        """
+        batch_size = self.config.model.batch_size
+        detections = []
+        for i in range(0, len(frames), batch_size):
+            detections_batch = self.model.predict(
+                frames[i:i+batch_size],
+                conf=self.config.model.confidence_threshold
+            )
             detections += detections_batch
         return detections
 
@@ -164,11 +183,21 @@ class Tracker:
 
         return frame
 
-    def draw_team_ball_control(self,frame,frame_num,team_ball_control):
-        # Draw a semi-transparent rectaggle 
+    def draw_team_ball_control(self, frame, frame_num, team_ball_control):
+        """Draw team ball control statistics on frame."""
+        # Get position from config
+        pos = self.config.visualization.ball_control_position
+
+        # Draw a semi-transparent rectangle
         overlay = frame.copy()
-        cv2.rectangle(overlay, (1350, 850), (1900,970), (255,255,255), -1 )
-        alpha = 0.4
+        cv2.rectangle(
+            overlay,
+            (pos.x, pos.y),
+            (pos.x + pos.width, pos.y + pos.height),
+            (255, 255, 255),
+            -1
+        )
+        alpha = self.config.visualization.overlay_alpha
         cv2.addWeighted(overlay, alpha, frame, 1 - alpha, 0, frame)
 
         team_ball_control_till_frame = team_ball_control[:frame_num+1]
@@ -178,8 +207,16 @@ class Tracker:
         team_1 = team_1_num_frames/(team_1_num_frames+team_2_num_frames)
         team_2 = team_2_num_frames/(team_1_num_frames+team_2_num_frames)
 
-        cv2.putText(frame, f"Team 1 Ball Control: {team_1*100:.2f}%",(1400,900), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,0), 3)
-        cv2.putText(frame, f"Team 2 Ball Control: {team_2*100:.2f}%",(1400,950), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,0), 3)
+        # Get font settings from config
+        font = getattr(cv2, self.config.visualization.font)
+        font_scale = self.config.visualization.font_scale
+        font_thickness = self.config.visualization.font_thickness
+        font_color = tuple(self.config.visualization.font_color)
+
+        cv2.putText(frame, f"Team 1 Ball Control: {team_1*100:.2f}%",
+                   (pos.x + 50, pos.y + 50), font, font_scale, font_color, font_thickness)
+        cv2.putText(frame, f"Team 2 Ball Control: {team_2*100:.2f}%",
+                   (pos.x + 50, pos.y + 100), font, font_scale, font_color, font_thickness)
 
         return frame
 
@@ -194,19 +231,22 @@ class Tracker:
 
             # Draw Players
             for track_id, player in player_dict.items():
-                color = player.get("team_color",(0,0,255))
-                frame = self.draw_ellipse(frame, player["bbox"],color, track_id)
+                color = player.get("team_color", tuple(self.config.visualization.colors["default_player"]))
+                frame = self.draw_ellipse(frame, player["bbox"], color, track_id)
 
-                if player.get('has_ball',False):
-                    frame = self.draw_triangle(frame, player["bbox"],(0,0,255))
+                if player.get('has_ball', False):
+                    ball_possession_color = tuple(self.config.visualization.colors["ball_possession"])
+                    frame = self.draw_triangle(frame, player["bbox"], ball_possession_color)
 
             # Draw Referee
+            referee_color = tuple(self.config.visualization.colors["referee"])
             for _, referee in referee_dict.items():
-                frame = self.draw_ellipse(frame, referee["bbox"],(0,255,255))
-            
+                frame = self.draw_ellipse(frame, referee["bbox"], referee_color)
+
             # Draw ball
+            ball_color = tuple(self.config.visualization.colors["ball"])
             for track_id, ball in ball_dict.items():
-                frame = self.draw_triangle(frame, ball["bbox"],(0,255,0))
+                frame = self.draw_triangle(frame, ball["bbox"], ball_color)
 
 
             # Draw Team Ball Control

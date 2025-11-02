@@ -84,11 +84,11 @@
 
 ## 🏗️ Architecture & Code Quality
 
-**Priority:** HIGH | **Estimated Time:** 1 week
+**Priority:** HIGH | **Estimated Time:** 1 week | **Status:** ✅ 50% COMPLETED
 
 ### Configuration System
 
-- [ ] **Create `config.yaml` configuration file**
+- [x] **Create `config.yaml` configuration file**
   - **File:** `config.yaml`
   - **Includes:**
     - Video settings (paths, fps, resolution)
@@ -97,39 +97,46 @@
     - Team assignment settings
     - Visualization options
     - Performance settings
+  - ✅ **COMPLETED:** 2025-11-02 - 300+ lines, 14 sections
 
-- [ ] **Implement configuration loader**
+- [x] **Implement configuration loader**
   - **File:** `utils/config_loader.py`
   - **Features:**
     - YAML parsing
     - Configuration validation
     - Default values
     - Type checking
+  - ✅ **COMPLETED:** 2025-11-02 - 450+ lines, 14 dataclasses, type-safe
 
-- [ ] **Refactor main.py to use config**
+- [x] **Refactor main.py to use config**
   - Replace all hardcoded values
   - Load config at startup
   - Pass config to all modules
+  - ✅ **COMPLETED:** 2025-11-02
 
 ### Remove Hardcoded Values
 
-- [ ] **Extract visualization coordinates**
+- [x] **Extract visualization coordinates**
   - **Current:** `tracker.py:170` has hardcoded (1350, 850)
   - **Move to:** `config.yaml` under `visualization.ball_control_position`
+  - ✅ **COMPLETED:** 2025-11-02
 
-- [ ] **Extract perspective transform coordinates**
+- [x] **Extract perspective transform coordinates**
   - **Current:** `view_transformer.py:9-12` has hardcoded pixel vertices
   - **Move to:** `config.yaml` under `perspective.pixel_vertices`
+  - ✅ **COMPLETED:** 2025-11-02
 
-- [ ] **Extract camera movement parameters**
+- [x] **Extract camera movement parameters**
   - **Current:** `camera_movement_estimator.py:14-29` has hardcoded params
   - **Move to:** `config.yaml` under `camera.optical_flow_params`
+  - ✅ **COMPLETED:** 2025-11-02
 
-- [ ] **Extract all magic numbers**
+- [x] **Extract all magic numbers**
   - Ball assignment distance threshold (70px)
   - Speed calculation window (5 frames)
   - Frame rate (24 fps)
   - Batch size (20 frames)
+  - ✅ **COMPLETED:** 2025-11-02 - All values in config
 
 ### Code Organization
 

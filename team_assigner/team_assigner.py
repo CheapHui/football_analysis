@@ -1,24 +1,58 @@
 from sklearn.cluster import KMeans
 
 class TeamAssigner:
-    def __init__(self):
+    def __init__(self, config):
+        """
+        Initialize team assigner with configuration.
+
+        Args:
+            config: Configuration object from config_loader
+        """
+        self.config = config
         self.team_colors = {}
         self.player_team_dict = {}
-    
-    def get_clustering_model(self,image):
-        # Reshape the image to 2D array
-        image_2d = image.reshape(-1,3)
 
-        # Preform K-means with 2 clusters
-        kmeans = KMeans(n_clusters=2, init="k-means++",n_init=1)
+    def get_clustering_model(self, image):
+        """
+        Create K-Means clustering model for color segmentation.
+
+        Args:
+            image: Image to cluster
+
+        Returns:
+            Fitted K-Means model
+        """
+        # Reshape the image to 2D array
+        image_2d = image.reshape(-1, 3)
+
+        # Perform K-means with 2 clusters (background vs jersey)
+        kmeans = KMeans(
+            n_clusters=2,
+            init=self.config.team_assignment.kmeans_init,
+            n_init=1
+        )
         kmeans.fit(image_2d)
 
         return kmeans
 
-    def get_player_color(self,frame,bbox):
-        image = frame[int(bbox[1]):int(bbox[3]),int(bbox[0]):int(bbox[2])]
+    def get_player_color(self, frame, bbox):
+        """
+        Extract player jersey color from bounding box.
 
-        top_half_image = image[0:int(image.shape[0]/2),:]
+        Args:
+            frame: Video frame
+            bbox: Player bounding box [x1, y1, x2, y2]
+
+        Returns:
+            RGB color array
+        """
+        image = frame[int(bbox[1]):int(bbox[3]), int(bbox[0]):int(bbox[2])]
+
+        # Use top half of image to avoid shorts/legs
+        if self.config.team_assignment.use_top_half:
+            top_half_image = image[0:int(image.shape[0]/2), :]
+        else:
+            top_half_image = image
 
         # Get Clustering model
         kmeans = self.get_clustering_model(top_half_image)
@@ -39,15 +73,26 @@ class TeamAssigner:
         return player_color
 
 
-    def assign_team_color(self,frame, player_detections):
-        
+    def assign_team_color(self, frame, player_detections):
+        """
+        Assign team colors based on player jersey colors.
+
+        Args:
+            frame: Video frame
+            player_detections: Dictionary of player detections
+        """
         player_colors = []
         for _, player_detection in player_detections.items():
             bbox = player_detection["bbox"]
-            player_color =  self.get_player_color(frame,bbox)
+            player_color = self.get_player_color(frame, bbox)
             player_colors.append(player_color)
-        
-        kmeans = KMeans(n_clusters=2, init="k-means++",n_init=10)
+
+        # Cluster player colors into teams
+        kmeans = KMeans(
+            n_clusters=self.config.team_assignment.num_clusters,
+            init=self.config.team_assignment.kmeans_init,
+            n_init=self.config.team_assignment.kmeans_iterations
+        )
         kmeans.fit(player_colors)
 
         self.kmeans = kmeans

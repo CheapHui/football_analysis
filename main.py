@@ -1,4 +1,5 @@
 from utils import read_video, save_video
+from utils.config_loader import load_config
 from trackers import Tracker
 import cv2
 import numpy as np
@@ -9,41 +10,46 @@ from view_transformer import ViewTransformer
 from speed_and_distance_estimator import SpeedAndDistance_Estimator
 
 
-def main():
+def main(config_path='config.yaml'):
+    # Load configuration
+    config = load_config(config_path)
+
     # Read Video
-    video_frames = read_video('input_videos/08fd33_4.mp4')
+    video_frames = read_video(config.video.input_path)
 
     # Initialize Tracker
-    tracker = Tracker('models/best.pt')
+    tracker = Tracker(config)
 
     tracks = tracker.get_object_tracks(video_frames,
-                                       read_from_stub=True,
-                                       stub_path='stubs/track_stubs.pkl')
+                                       read_from_stub=config.caching.read_from_stub,
+                                       stub_path=config.caching.tracks_stub)
     # Get object positions 
     tracker.add_position_to_tracks(tracks)
 
-    # camera movement estimator
-    camera_movement_estimator = CameraMovementEstimator(video_frames[0])
-    camera_movement_per_frame = camera_movement_estimator.get_camera_movement(video_frames,
-                                                                                read_from_stub=True,
-                                                                                stub_path='stubs/camera_movement_stub.pkl')
-    camera_movement_estimator.add_adjust_positions_to_tracks(tracks,camera_movement_per_frame)
-
+    # Camera movement estimator
+    camera_movement_estimator = CameraMovementEstimator(video_frames[0], config)
+    camera_movement_per_frame = camera_movement_estimator.get_camera_movement(
+        video_frames,
+        read_from_stub=config.caching.read_from_stub,
+        stub_path=config.caching.camera_movement_stub
+    )
+    camera_movement_estimator.add_adjust_positions_to_tracks(tracks, camera_movement_per_frame)
 
     # View Transformer
-    view_transformer = ViewTransformer()
+    view_transformer = ViewTransformer(config)
     view_transformer.add_transformed_position_to_tracks(tracks)
 
     # Interpolate Ball Positions
-    tracks["ball"] = tracker.interpolate_ball_positions(tracks["ball"])
+    if config.tracking.interpolate_ball:
+        tracks["ball"] = tracker.interpolate_ball_positions(tracks["ball"])
 
     # Speed and distance estimator
-    speed_and_distance_estimator = SpeedAndDistance_Estimator()
+    speed_and_distance_estimator = SpeedAndDistance_Estimator(config)
     speed_and_distance_estimator.add_speed_and_distance_to_tracks(tracks)
 
     # Assign Player Teams
-    team_assigner = TeamAssigner()
-    team_assigner.assign_team_color(video_frames[0], 
+    team_assigner = TeamAssigner(config)
+    team_assigner.assign_team_color(video_frames[0],
                                     tracks['players'][0])
     
     for frame_num, player_track in enumerate(tracks['players']):
@@ -54,10 +60,10 @@ def main():
             tracks['players'][frame_num][player_id]['team'] = team 
             tracks['players'][frame_num][player_id]['team_color'] = team_assigner.team_colors[team]
 
-    
-    # Assign Ball Aquisition
-    player_assigner =PlayerBallAssigner()
-    team_ball_control= []
+
+    # Assign Ball Acquisition
+    player_assigner = PlayerBallAssigner(config)
+    team_ball_control = []
     for frame_num, player_track in enumerate(tracks['players']):
         ball_bbox = tracks['ball'][frame_num][1]['bbox']
         assigned_player = player_assigner.assign_ball_to_player(player_track, ball_bbox)
@@ -81,7 +87,7 @@ def main():
     speed_and_distance_estimator.draw_speed_and_distance(output_video_frames,tracks)
 
     # Save video
-    save_video(output_video_frames, 'output_videos/output_video.avi')
+    save_video(output_video_frames, config.video.output_path)
 
 if __name__ == '__main__':
     main()
